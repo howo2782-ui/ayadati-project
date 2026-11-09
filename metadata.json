@@ -1,0 +1,6 @@
+{
+  "name": "عيادتي",
+  "description": "تطبيق متطور لإدارة العيادات الطبية متعدد الأطباء وتنظيم أدوار المرضى مع التخزين المحلي",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

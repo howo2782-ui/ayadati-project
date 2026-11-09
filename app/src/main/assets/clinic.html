@@ -1,0 +1,1907 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>نظام إدارة العيادات الطبية والأدوار - عيادتي</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Cairo & Tajawal for Arabic typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Cairo', 'Tajawal', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              50: '#ecfeff',
+              100: '#cffafe',
+              200: '#a5f3fc',
+              300: '#67e8f9',
+              400: '#22d3ee',
+              500: '#06b6d4',
+              600: '#0891b2',
+              700: '#0e7490',
+              800: '#155e75',
+              900: '#164e63',
+            },
+            medical: {
+              teal: '#0d9488',
+              emerald: '#059669',
+              sky: '#0284c7',
+              navy: '#0f172a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Cairo', 'Tajawal', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, textarea, select {
+      user-select: text;
+    }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    /* Pulse glow for current calling number */
+    @keyframes call-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
+      50% { box-shadow: 0 0 25px 8px rgba(6, 182, 212, 0.7); }
+    }
+    .calling-pulse {
+      animation: call-glow 1.8s infinite;
+    }
+    /* Print Ticket Styles */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printableTicket, #printableTicket * {
+        visibility: visible;
+      }
+      #printableTicket {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col selection:bg-primary-500 selection:text-white">
+
+  <!-- ================= TOP HEADER ================= -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo & Clinic Title -->
+        <div class="flex items-center space-x-3 space-x-reverse">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-primary-500/20">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-lg font-black tracking-tight text-slate-900 flex items-center gap-2">
+              عيادتي <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">المركز التخصصي</span>
+            </h1>
+            <p class="text-xs text-slate-500 font-medium">نظام إدارة الطوابير وحجوزات المرضى</p>
+          </div>
+        </div>
+
+        <!-- Clock & Sound Indicator -->
+        <div class="flex items-center gap-3">
+          <div class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold">
+            <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke-width="2"></circle>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2"></path>
+            </svg>
+            <span id="currentTimeDisplay">--:--:--</span>
+          </div>
+
+          <!-- Sound Toggle Button -->
+          <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition" title="تفعيل / كتم النداء الصوتي">
+            <svg id="soundOnIcon" class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+            </svg>
+            <svg id="soundOffIcon" class="w-5 h-5 text-slate-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs (RTL) -->
+      <nav class="flex border-t border-slate-100 -mb-px overflow-x-auto gap-2 py-2">
+        <button onclick="switchTab('bookingTab')" id="nav-bookingTab" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap bg-primary-600 text-white shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+          </svg>
+          حجز دور مريض
+        </button>
+
+        <button onclick="switchTab('myTicketTab')" id="nav-myTicketTab" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap text-slate-600 hover:bg-slate-100">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path>
+          </svg>
+          تذكرتي والمتابعة
+        </button>
+
+        <button onclick="switchTab('doctorAdminTab')" id="nav-doctorAdminTab" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap text-slate-600 hover:bg-slate-100">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+          </svg>
+          لوحة الطبيب والإدارة
+        </button>
+
+        <button onclick="switchTab('screenTab')" id="nav-screenTab" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap text-slate-600 hover:bg-slate-100">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+          </svg>
+          شاشة قاعة الانتظار
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTENT CONTAINER ================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- ================= 1. TAB: PATIENT BOOKING ================= -->
+    <section id="bookingTab" class="tab-content block">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left / Main Form: Booking Form (8 cols) -->
+        <div class="lg:col-span-8 bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+            <div>
+              <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-sm">1</span>
+                حجز تذكرة دور جديدة
+              </h2>
+              <p class="text-sm text-slate-500 mt-1">اختر الطبيب وأدخل بيانات المريض للحصول على رقم دور فوري</p>
+            </div>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              الحجز متاح الآن
+            </span>
+          </div>
+
+          <form id="bookingForm" onsubmit="handlePatientBooking(event)" class="space-y-6">
+            
+            <!-- Step 1: Select Doctor (Multi-Doctor Feature) -->
+            <div>
+              <label class="block text-sm font-bold text-slate-800 mb-2">
+                اختر الطبيب أو التخصص الطبي <span class="text-red-500">*</span>
+              </label>
+              
+              <!-- Doctor Select Dropdown -->
+              <div class="relative">
+                <select id="doctorSelect" onchange="onDoctorSelectionChange()" required class="w-full appearance-none bg-slate-50 border border-slate-300 rounded-xl px-4 py-3.5 pr-10 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition">
+                  <!-- Populated dynamically via JS -->
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center px-3 text-slate-500">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Selected Doctor Info Card (Summary) -->
+              <div id="selectedDoctorSummaryCard" class="mt-3 p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div id="docAvatar" class="w-12 h-12 rounded-xl bg-primary-600 text-white flex items-center justify-center text-lg font-bold shadow-sm">
+                    د
+                  </div>
+                  <div>
+                    <h4 id="docSummaryName" class="font-bold text-slate-900 text-base">د. أحمد المنصوري</h4>
+                    <p id="docSummarySpecialty" class="text-xs text-primary-700 font-medium">طب عام وباطنية - عيادة رقم 1</p>
+                    <p id="docSummaryHours" class="text-xs text-slate-500 mt-0.5">أوقات العمل: 09:00 ص - 01:00 م | 04:00 م - 08:00 م</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 self-end sm:self-center">
+                  <div class="text-center px-3 py-1.5 rounded-lg bg-white border border-slate-200">
+                    <span class="block text-xs text-slate-400 font-medium">في الانتظار</span>
+                    <span id="docQueueCountBadge" class="font-black text-slate-800 text-sm">0</span>
+                  </div>
+                  <div class="text-center px-3 py-1.5 rounded-lg bg-teal-50 border border-teal-200">
+                    <span class="block text-xs text-teal-700 font-medium">الكشف الحالي</span>
+                    <span id="docCurrentServingBadge" class="font-black text-teal-800 text-sm">--</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Patient Info -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="patientName" class="block text-sm font-bold text-slate-800 mb-1">
+                  اسم المريض الثلاثي <span class="text-red-500">*</span>
+                </label>
+                <input type="text" id="patientName" required placeholder="مثال: محمد عبد الله السالم" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition">
+              </div>
+
+              <div>
+                <label for="patientPhone" class="block text-sm font-bold text-slate-800 mb-1">
+                  رقم الهاتف للتواصل <span class="text-red-500">*</span>
+                </label>
+                <input type="tel" id="patientPhone" required placeholder="05XXXXXXXX" dir="ltr" class="w-full text-right bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="patientAge" class="block text-sm font-bold text-slate-800 mb-1">
+                  العمر (سنة)
+                </label>
+                <input type="number" id="patientAge" min="1" max="120" placeholder="مثال: 32" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition">
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-slate-800 mb-1">
+                  أولوية الكشف
+                </label>
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:border-primary-400 transition">
+                    <input type="radio" name="priorityType" value="normal" checked class="text-primary-600 focus:ring-primary-500">
+                    <span class="text-xs font-bold text-slate-800">حالة عادية</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-3 rounded-xl border border-amber-200 bg-amber-50 cursor-pointer hover:border-amber-400 transition">
+                    <input type="radio" name="priorityType" value="urgent" class="text-amber-600 focus:ring-amber-500">
+                    <span class="text-xs font-bold text-amber-800">حالة مستعجلة ⚠️</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label for="visitReason" class="block text-sm font-bold text-slate-800 mb-1">
+                سبب الزيارة أو الأعراض (اختياري)
+              </label>
+              <textarea id="visitReason" rows="2" placeholder="ملاحظات أو أعراض تفيد الطبيب أثناء الكشف..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="w-full py-4 rounded-xl bg-gradient-to-r from-primary-600 to-teal-600 hover:from-primary-700 hover:to-teal-700 text-white font-black text-base shadow-lg shadow-primary-600/25 transition transform active:scale-[0.99] flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+              تأكيد حجز التذكرة واستخراج رقم الدور
+            </button>
+          </form>
+        </div>
+
+        <!-- Right Side: Doctors Overview Cards (4 cols) -->
+        <div class="lg:col-span-4 space-y-4">
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+            <h3 class="font-black text-slate-900 text-base mb-3 flex items-center gap-2">
+              <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              </svg>
+              حالة الأطباء المتاحين اليوم
+            </h3>
+            <p class="text-xs text-slate-500 mb-4">انقر على أي طبيب لتحديده فوراً في نموذج الحجز</p>
+
+            <div id="doctorsListContainer" class="space-y-3">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Clinic Highlights Card -->
+          <div class="bg-gradient-to-br from-primary-900 to-slate-900 text-white rounded-2xl p-5 shadow-md">
+            <h4 class="font-bold text-sm text-teal-300 flex items-center gap-1.5 mb-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              إرشادات قاعة الانتظار
+            </h4>
+            <ul class="text-xs text-slate-300 space-y-2 leading-relaxed">
+              <li>• يرجى التواجد في قاعة الانتظار قبل موعد الكشف التقديري بـ 10 دقائق.</li>
+              <li>• يتم استدعاء المريض بالرقم والاسم عبر الشاشات ومكبر الصوت.</li>
+              <li>• بيانات الحجوزات والأدوار محفوظة محلياً وتحدث باستمرار.</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= 2. TAB: MY TICKET & TRACKING ================= -->
+    <section id="myTicketTab" class="tab-content hidden">
+      <div class="max-w-3xl mx-auto">
+        
+        <!-- Search existing ticket by number or phone -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
+          <h3 class="text-lg font-black text-slate-900 mb-2">البحث عن تذكرة سابقة والمتابعة</h3>
+          <p class="text-xs text-slate-500 mb-4">أدخل رقم التذكرة أو رقم الهاتف للاستعلام عن دورك الحالي</p>
+          <div class="flex gap-2">
+            <input type="text" id="searchTicketInput" placeholder="أدخل رقم التذكرة (مثل A-101) أو رقم الهاتف..." class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+            <button onclick="searchTicket()" class="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold transition flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              بحث
+            </button>
+          </div>
+        </div>
+
+        <!-- Ticket Card Display -->
+        <div id="ticketDisplayContainer">
+          <div class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-200 relative">
+            
+            <!-- Ticket Top Header -->
+            <div class="bg-gradient-to-r from-primary-700 via-primary-600 to-teal-600 p-6 text-white text-center relative overflow-hidden">
+              <div class="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
+              <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-teal-400/20 rounded-full blur-xl"></div>
+
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold mb-3 backdrop-blur-sm">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                تذكرة دخول طبية معتمدة
+              </div>
+
+              <p class="text-xs text-primary-100 font-medium">الرقم التسلسلي للدور</p>
+              <h2 id="ticketCodeDisplay" class="text-5xl font-black tracking-wider my-1 text-white">---</h2>
+              <p id="ticketStatusBadgeDisplay" class="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold bg-white text-primary-800 shadow-sm">
+                في الانتظار ⏳
+              </p>
+            </div>
+
+            <!-- Perforated Line Decoration -->
+            <div class="relative bg-white py-2 flex items-center justify-between">
+              <div class="w-5 h-8 bg-slate-50 rounded-l-full -mr-2 border-r border-slate-200"></div>
+              <div class="flex-1 border-b-2 border-dashed border-slate-200 mx-2"></div>
+              <div class="w-5 h-8 bg-slate-50 rounded-r-full -ml-2 border-l border-slate-200"></div>
+            </div>
+
+            <!-- Ticket Body Details -->
+            <div class="p-6 sm:p-8 space-y-6">
+              
+              <div class="grid grid-cols-2 gap-4 pb-4 border-b border-slate-100">
+                <div>
+                  <span class="text-xs text-slate-400 font-medium block">اسم المريض</span>
+                  <span id="ticketPatientNameDisplay" class="text-base font-bold text-slate-800">لا توجد تذكرة نشطة</span>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-400 font-medium block">الطبيب المعالج</span>
+                  <span id="ticketDoctorNameDisplay" class="text-base font-bold text-primary-700">--</span>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-400 font-medium block">العيادة والتخصص</span>
+                  <span id="ticketClinicRoomDisplay" class="text-sm font-semibold text-slate-700">--</span>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-400 font-medium block">وقت وتاريخ الحجز</span>
+                  <span id="ticketTimeDisplay" class="text-sm font-semibold text-slate-700">--</span>
+                </div>
+              </div>
+
+              <!-- Live Queue Metrics -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 text-center">
+                  <span class="text-xs text-slate-500 font-medium block">الرقم المستدعى الآن</span>
+                  <span id="ticketCurrentServingDisplay" class="text-2xl font-black text-slate-900 mt-1 block">--</span>
+                </div>
+
+                <div class="bg-primary-50 rounded-xl p-3.5 border border-primary-200 text-center">
+                  <span class="text-xs text-primary-700 font-medium block">مرضى متبقون قبلك</span>
+                  <span id="ticketAheadCountDisplay" class="text-2xl font-black text-primary-900 mt-1 block">0</span>
+                </div>
+
+                <div class="bg-teal-50 rounded-xl p-3.5 border border-teal-200 text-center">
+                  <span class="text-xs text-teal-700 font-medium block">الوقت التقديري المتبقي</span>
+                  <span id="ticketEstimatedTimeDisplay" class="text-2xl font-black text-teal-900 mt-1 block">--</span>
+                </div>
+              </div>
+
+              <!-- Status Progress Tracker -->
+              <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                <h5 class="text-xs font-bold text-slate-600 mb-3">مراحل رحلة الكشف:</h5>
+                <div class="flex items-center justify-between relative">
+                  <div class="w-full absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 bg-slate-200 z-0"></div>
+                  
+                  <div class="flex flex-col items-center relative z-10">
+                    <div id="stepDot1" class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">✓</div>
+                    <span class="text-[11px] font-bold text-slate-700 mt-1">تم الحجز</span>
+                  </div>
+
+                  <div class="flex flex-col items-center relative z-10">
+                    <div id="stepDot2" class="w-7 h-7 rounded-full bg-primary-600 text-white flex items-center justify-center text-xs font-bold animate-pulse">2</div>
+                    <span class="text-[11px] font-bold text-slate-700 mt-1">في الانتظار</span>
+                  </div>
+
+                  <div class="flex flex-col items-center relative z-10">
+                    <div id="stepDot3" class="w-7 h-7 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center text-xs font-bold">3</div>
+                    <span class="text-[11px] font-bold text-slate-500 mt-1">غرفة الكشف</span>
+                  </div>
+
+                  <div class="flex flex-col items-center relative z-10">
+                    <div id="stepDot4" class="w-7 h-7 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center text-xs font-bold">4</div>
+                    <span class="text-[11px] font-bold text-slate-500 mt-1">اكتمال الفحص</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Ticket Action Buttons -->
+              <div class="flex flex-wrap items-center justify-center gap-3 pt-2 no-print">
+                <button onclick="printCurrentTicket()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold transition flex items-center gap-2 shadow-sm">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                  </svg>
+                  طباعة التذكرة
+                </button>
+
+                <button onclick="switchTab('bookingTab')" class="px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-bold transition flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                  </svg>
+                  حجز تذكرة أخرى
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= 3. TAB: DOCTOR & ADMIN DASHBOARD ================= -->
+    <section id="doctorAdminTab" class="tab-content hidden">
+      
+      <!-- Top Control Bar: Doctor Selector + Day Reset + Walk-in Button -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        
+        <!-- Multi-Doctor Switcher Dropdown (Requirement 1) -->
+        <div class="flex-1 flex flex-col sm:flex-row sm:items-center gap-3">
+          <label for="adminDoctorFilter" class="text-sm font-black text-slate-900 whitespace-nowrap flex items-center gap-1.5">
+            <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            لوحة الطبيب الحالي:
+          </label>
+          <div class="relative flex-1 max-w-md">
+            <select id="adminDoctorFilter" onchange="onAdminDoctorChange()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-primary-500">
+              <!-- Filled via JS -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Action Buttons: Reset Daily Queue + Add Walk-in -->
+        <div class="flex flex-wrap items-center gap-2">
+          
+          <!-- Add Walk-in quick button -->
+          <button onclick="openWalkInModal()" class="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+            </svg>
+            تسجيل مريض مباشر (Walk-in)
+          </button>
+
+          <!-- Toggle Doctor Available / Break -->
+          <button id="toggleDocStatusBtn" onclick="toggleCurrentDoctorAvailability()" class="px-3.5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 font-bold text-xs text-slate-700 transition flex items-center gap-1">
+            <span id="docStatusIndicatorDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span id="docStatusIndicatorText">متاح للكشف</span>
+          </button>
+
+          <!-- Reset Daily Queue (Requirement 2) -->
+          <button onclick="confirmResetDailyQueue()" class="px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-xs sm:text-sm transition flex items-center gap-1.5" title="تصفير الأرقام وقائمة اليوم">
+            <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            تصفير اليوم الجديد
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Doctor Stats Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+          </div>
+          <div>
+            <span class="text-xs text-slate-500 font-bold block">قيد الكشف الآن</span>
+            <span id="adminStatServing" class="text-2xl font-black text-slate-900">--</span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <span class="text-xs text-slate-500 font-bold block">في قائمة الانتظار</span>
+            <span id="adminStatWaiting" class="text-2xl font-black text-slate-900">0</span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <span class="text-xs text-slate-500 font-bold block">تم كشفهم اليوم</span>
+            <span id="adminStatCompleted" class="text-2xl font-black text-slate-900">0</span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <span class="text-xs text-slate-500 font-bold block">ملغي / غائب</span>
+            <span id="adminStatCancelled" class="text-2xl font-black text-slate-900">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current Patient Serving Console & Action Panel -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+        
+        <!-- Active Patient Console (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+            <h3 class="font-black text-slate-900 text-lg flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-teal-500 animate-ping"></span>
+              المريض داخل غرفة الكشف حالياً
+            </h3>
+            <span id="activeDoctorBadge" class="text-xs font-bold px-2.5 py-1 rounded-md bg-slate-100 text-slate-700">
+              د. أحمد المنصوري
+            </span>
+          </div>
+
+          <div id="activePatientCardContent">
+            <!-- Displayed when a patient is in consultation -->
+            <div id="hasActivePatientBlock" class="hidden">
+              <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200 mb-5">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-3">
+                    <span id="activeTicketCode" class="px-3.5 py-1.5 rounded-xl bg-primary-600 text-white font-black text-xl shadow-sm">
+                      MED-101
+                    </span>
+                    <div>
+                      <h4 id="activePatientName" class="font-black text-slate-900 text-lg">سالم عبد العزيز</h4>
+                      <p id="activePatientMeta" class="text-xs text-slate-500">هاتف: 0501234567 | العمر: 35 سنة</p>
+                    </div>
+                  </div>
+                  <span id="activePriorityBadge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-200 text-slate-700">
+                    عادي
+                  </span>
+                </div>
+
+                <div class="text-xs text-slate-600 bg-white p-3 rounded-xl border border-slate-200">
+                  <span class="font-bold block text-slate-800 mb-0.5">سبب الزيارة / الأعراض:</span>
+                  <p id="activeVisitReason">فحص عام وارتفاع طفيف في درجات الحرارة</p>
+                </div>
+              </div>
+
+              <!-- Quick Diagnosis / Doctor Note -->
+              <div class="mb-4">
+                <label for="doctorDiagnosisInput" class="block text-xs font-bold text-slate-700 mb-1">
+                  ملاحظات الطبيب والتشخيص (اختياري، تحفظ في سجل المريض):
+                </label>
+                <input type="text" id="doctorDiagnosisInput" placeholder="أدخل التشخيص أو التوجيهات الطبية..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+              </div>
+
+              <!-- Primary Consultation Actions -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button onclick="recallActivePatient()" class="py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition flex items-center justify-center gap-1.5 shadow-sm">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+                  </svg>
+                  إعادة النداء 🔔
+                </button>
+
+                <button onclick="completeActiveConsultation()" class="py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  إنهاء الكشف ✓
+                </button>
+
+                <button onclick="cancelActiveConsultation()" class="py-3 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-sm transition flex items-center justify-center gap-1.5">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                  إلغاء / غياب ✕
+                </button>
+              </div>
+            </div>
+
+            <!-- Empty State when no patient is currently in room -->
+            <div id="noActivePatientBlock" class="text-center py-10 px-4">
+              <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-3">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+              </div>
+              <h4 class="font-bold text-slate-800 text-base mb-1">عيادة الطبيب جاهزة لاستقبال المريض التالي</h4>
+              <p class="text-xs text-slate-500 mb-5 max-w-sm mx-auto">انقر على زر استدعاء المريض التالي لمناداة صاحب الدور القادم وتحديث الشاشات والنداء الصوتي تلقائياً.</p>
+              
+              <button onclick="callNextPatientForCurrentDoctor()" class="py-3.5 px-8 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-black text-base shadow-lg shadow-primary-600/25 transition transform active:scale-95 inline-flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path>
+                </svg>
+                استدعاء المريض التالي الآن (Call Next)
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Next in Queue Preview & Doctor Settings (5 cols) -->
+        <div class="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+              <h4 class="font-black text-slate-900 text-sm">المريض القادم في الانتظار</h4>
+              <span id="nextQueueBadgeCount" class="text-xs font-bold text-primary-700 bg-primary-50 px-2.5 py-0.5 rounded-full">
+                0 متبقون
+              </span>
+            </div>
+
+            <div id="nextPatientPreviewContainer">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Doctor Queue Info Box -->
+          <div class="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-500 space-y-1.5">
+            <div class="flex justify-between">
+              <span>متوسط وقت الكشف:</span>
+              <span id="docAvgDuration" class="font-bold text-slate-800">15 دقيقة / مريض</span>
+            </div>
+            <div class="flex justify-between">
+              <span>أوقات العمل اليوم:</span>
+              <span id="docWorkingHours" class="font-bold text-slate-800">09:00 ص - 01:00 م</span>
+            </div>
+            <div class="flex justify-between">
+              <span>رمز التذاكر الخاص:</span>
+              <span id="docTicketPrefix" class="font-bold text-primary-700">MED</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Queue Table for this Doctor -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="font-black text-slate-900 text-base">قائمة الانتظار الكاملة للطبيب المحدد</h3>
+            <p class="text-xs text-slate-500 mt-0.5">يمكنك استدعاء أي مريض مباشرة أو إعادة ترتيب الأولوية</p>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <!-- Filter status -->
+            <select id="queueStatusFilter" onchange="renderAdminQueueTable()" class="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700">
+              <option value="all">كل الحالات (الكل)</option>
+              <option value="waiting" selected>في الانتظار فقط</option>
+              <option value="completed">تم الكشف</option>
+              <option value="cancelled">ملغي / غائب</option>
+            </select>
+
+            <button onclick="exportDataToJSON()" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-xs font-bold text-slate-700 transition flex items-center gap-1" title="تصدير نسخة احتياطية من البيانات">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+              تصدير النسخة
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-right text-xs sm:text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+              <tr>
+                <th class="py-3 px-4">رقم الدور</th>
+                <th class="py-3 px-4">اسم المريض</th>
+                <th class="py-3 px-4">الهاتف</th>
+                <th class="py-3 px-4">وقت الحجز</th>
+                <th class="py-3 px-4">الأولوية</th>
+                <th class="py-3 px-4">الحالة</th>
+                <th class="py-3 px-4 text-center">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="adminQueueTableBody" class="divide-y divide-slate-100">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= 4. TAB: WAITING ROOM TV SCREEN ================= -->
+    <section id="screenTab" class="tab-content hidden">
+      <div class="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-800">
+        
+        <!-- Screen Header -->
+        <div class="flex flex-col sm:flex-row items-center justify-between pb-6 mb-8 border-b border-slate-800 gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-teal-500 text-slate-950 flex items-center justify-center font-black text-2xl shadow-lg shadow-teal-500/20">
+              +
+            </div>
+            <div>
+              <h2 class="text-2xl font-black tracking-tight text-white">شاشة الاستدعاء ومتابعة الأدوار</h2>
+              <p class="text-xs text-teal-400 font-semibold">مباشر • قاعة الانتظار الرئيسية</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-4">
+            <div class="text-right">
+              <span id="screenLiveClock" class="text-3xl font-mono font-black text-white tracking-wider block">--:--:--</span>
+              <span id="screenLiveDate" class="text-xs text-slate-400 block font-medium">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-Doctor Live Grid Display -->
+        <div id="tvDoctorsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Dynamically populated for every doctor -->
+        </div>
+
+        <!-- TV Footer Ticker / Notice -->
+        <div class="mt-8 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse"></span>
+            <span>يتم نداء المريض تلقائياً عند حلول دوره - يرجى تجهيز الهوية أو التذكرة</span>
+          </div>
+          <span class="text-slate-500">نظام عيادتي الذكي v2.4</span>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= PRINTABLE TICKET COMPONENT (HIDDEN UNTIL PRINT) ================= -->
+  <div id="printableTicket" class="hidden">
+    <div style="border: 2px dashed #000; padding: 20px; max-width: 340px; margin: 0 auto; text-align: center; font-family: 'Cairo', sans-serif;">
+      <h2 style="margin: 0; font-size: 22px; font-weight: bold;">عيادتي - المركز الطبي التخصصي</h2>
+      <p style="margin: 4px 0 12px; font-size: 12px;">تذكرة حجز دور كشف</p>
+      <div style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 12px 0; margin: 12px 0;">
+        <span style="font-size: 11px; display: block;">رقم الدور:</span>
+        <h1 id="printTicketCode" style="font-size: 44px; margin: 5px 0; font-weight: 900;">A-101</h1>
+        <span id="printTicketPriority" style="font-size: 12px; font-weight: bold;">[ دور عادي ]</span>
+      </div>
+      <div style="text-align: right; font-size: 13px; line-height: 1.8;">
+        <div><strong>المريض:</strong> <span id="printPatientName">--</span></div>
+        <div><strong>الطبيب:</strong> <span id="printDoctorName">--</span></div>
+        <div><strong>التخصص:</strong> <span id="printDoctorSpecialty">--</span></div>
+        <div><strong>العيادة:</strong> <span id="printClinicRoom">--</span></div>
+        <div><strong>وقت الحجز:</strong> <span id="printTime">--</span></div>
+      </div>
+      <p style="margin-top: 16px; font-size: 11px; color: #555;">شكراً لتعاونكم ونتمنى لكم دوام الصحة والعافية</p>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: WALK-IN PATIENT QUICK REGISTRATION ================= -->
+  <div id="walkInModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+        <h3 class="font-black text-slate-900 text-lg flex items-center gap-2">
+          <span class="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm">+</span>
+          تسجيل مريض مباشر (Walk-in)
+        </h3>
+        <button onclick="closeWalkInModal()" class="text-slate-400 hover:text-slate-600 p-1">✕</button>
+      </div>
+
+      <form id="walkInForm" onsubmit="handleWalkInSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">الطبيب المطلوب</label>
+          <select id="walkInDoctorSelect" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-semibold">
+            <!-- options via js -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">اسم المريض <span class="text-red-500">*</span></label>
+          <input type="text" id="walkInName" required placeholder="اسم المريض الثلاثي" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">رقم الهاتف</label>
+          <input type="tel" id="walkInPhone" placeholder="05XXXXXXXX" dir="ltr" class="w-full text-right bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">الأولوية</label>
+          <select id="walkInPriority" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold">
+            <option value="normal">عادي</option>
+            <option value="urgent">حالة مستعجلة طارئة ⚠️</option>
+          </select>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm transition">
+            إضافة للطابور واستخراج التذكرة
+          </button>
+          <button type="button" onclick="closeWalkInModal()" class="px-4 py-3 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-sm">
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CONFIRM DAILY RESET ================= -->
+  <div id="resetConfirmModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-center">
+      <div class="w-14 h-14 rounded-full bg-rose-100 text-rose-600 mx-auto flex items-center justify-center mb-3">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+      </div>
+      <h3 class="font-black text-slate-900 text-lg mb-2">تأكيد تصفير اليوم الجديد</h3>
+      <p class="text-xs text-slate-500 mb-5 leading-relaxed">
+        سيتم إعادة تعيين أرقام الأدوار وقوائم الانتظار لجميع الأطباء لبداية يوم عمل جديد. هل أنت متأكد من المتابعة؟
+      </p>
+      
+      <div class="flex flex-col gap-2">
+        <button onclick="executeDailyReset(true)" class="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-sm transition">
+          نعم، تصفير الطوابير والبدء من جديد
+        </button>
+        <button onclick="closeResetModal()" class="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-sm">
+          إلغاء والتراجع
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= JAVASCRIPT LOGIC ================= -->
+  <script>
+    /* =========================================================================
+       CLINIC QUEUE MANAGEMENT APPLICATION CORE
+       - Multi-Doctor Architecture
+       - LocalStorage Realtime Persistence
+       - Audio & Arabic Speech Announcements
+       - Waiting TV Hall Live Engine
+       ========================================================================= */
+
+    const STORAGE_KEY = 'CLINIC_QUEUE_SYSTEM_DATA_V2';
+    const SOUND_KEY = 'CLINIC_SOUND_ENABLED';
+
+    // Default Initial Doctors Seed
+    const DEFAULT_DOCTORS = [
+      {
+        id: 'doc-1',
+        name: 'د. أحمد المنصوري',
+        specialty: 'طب عام وباطنية',
+        room: 'عيادة رقم 1',
+        prefix: 'A',
+        avgDurationMinutes: 12,
+        workingHours: '09:00 ص - 01:00 م | 04:00 م - 08:00 م',
+        status: 'available', // available | break | offline
+        color: 'from-blue-600 to-primary-600',
+        currentServingNumber: null, // ticket code currently in consultation
+        nextTicketSeq: 1, // for generating A-101, A-102 etc.
+      },
+      {
+        id: 'doc-2',
+        name: 'د. مريم الشريف',
+        specialty: 'طب وجراحة الأطفال',
+        room: 'عيادة رقم 2',
+        prefix: 'M',
+        avgDurationMinutes: 15,
+        workingHours: '09:30 ص - 02:00 م',
+        status: 'available',
+        color: 'from-pink-500 to-rose-600',
+        currentServingNumber: null,
+        nextTicketSeq: 1,
+      },
+      {
+        id: 'doc-3',
+        name: 'د. ياسين بن علي',
+        specialty: 'طب وجراحة الأسنان',
+        room: 'عيادة رقم 3',
+        prefix: 'Y',
+        avgDurationMinutes: 20,
+        workingHours: '10:00 ص - 03:00 م | 05:00 م - 09:00 م',
+        status: 'available',
+        color: 'from-emerald-600 to-teal-600',
+        currentServingNumber: null,
+        nextTicketSeq: 1,
+      },
+      {
+        id: 'doc-4',
+        name: 'د. سارة القاسمي',
+        specialty: 'طب وجراحة العيون',
+        room: 'عيادة رقم 4',
+        prefix: 'S',
+        avgDurationMinutes: 15,
+        workingHours: '08:30 ص - 01:30 م',
+        status: 'available',
+        color: 'from-amber-500 to-orange-600',
+        currentServingNumber: null,
+        nextTicketSeq: 1,
+      }
+    ];
+
+    // Global State
+    let state = {
+      doctors: [],
+      tickets: [], // array of all tickets
+      activeDoctorId: 'doc-1',
+      myActiveTicketId: null, // the ticket current user is tracking
+    };
+
+    let isSoundEnabled = true;
+
+    // Initialize Application
+    document.addEventListener('DOMContentLoaded', () => {
+      loadStateFromStorage();
+      initSoundSettings();
+      setupClock();
+      renderAllViews();
+    });
+
+    /* ================= LOCAL STORAGE PERSISTENCE ================= */
+    function loadStateFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          state.doctors = parsed.doctors && parsed.doctors.length > 0 ? parsed.doctors : DEFAULT_DOCTORS;
+          state.tickets = parsed.tickets || [];
+          state.activeDoctorId = parsed.activeDoctorId || state.doctors[0]?.id || 'doc-1';
+          state.myActiveTicketId = parsed.myActiveTicketId || null;
+        } else {
+          // Initialize defaults
+          state.doctors = JSON.parse(JSON.stringify(DEFAULT_DOCTORS));
+          state.tickets = [];
+          state.activeDoctorId = 'doc-1';
+          state.myActiveTicketId = null;
+          saveStateToStorage();
+        }
+      } catch (e) {
+        console.error('Error loading state from localStorage:', e);
+        state.doctors = JSON.parse(JSON.stringify(DEFAULT_DOCTORS));
+        state.tickets = [];
+      }
+    }
+
+    function saveStateToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.error('Failed to save to localStorage:', e);
+      }
+    }
+
+    /* ================= SOUND & ARABIC SPEECH ================= */
+    function initSoundSettings() {
+      const saved = localStorage.getItem(SOUND_KEY);
+      isSoundEnabled = saved !== null ? saved === 'true' : true;
+      updateSoundUI();
+    }
+
+    function toggleSound() {
+      isSoundEnabled = !isSoundEnabled;
+      localStorage.setItem(SOUND_KEY, isSoundEnabled.toString());
+      updateSoundUI();
+    }
+
+    function updateSoundUI() {
+      const onIcon = document.getElementById('soundOnIcon');
+      const offIcon = document.getElementById('soundOffIcon');
+      if (isSoundEnabled) {
+        onIcon.classList.remove('hidden');
+        offIcon.classList.add('hidden');
+      } else {
+        onIcon.classList.add('hidden');
+        offIcon.classList.remove('hidden');
+      }
+    }
+
+    // Play chime sound using Web Audio API
+    function playChime() {
+      if (!isSoundEnabled) return;
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioCtx.currentTime;
+
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(587.33, now); // D5
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.8);
+
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(880, now + 0.25); // A5
+        gain2.gain.setValueAtTime(0.35, now + 0.25);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.start(now + 0.25);
+        osc2.stop(now + 1.2);
+      } catch (e) {
+        console.log('Web Audio chime could not play:', e);
+      }
+    }
+
+    // Announce ticket in Arabic using SpeechSynthesis
+    function announcePatientCall(patientName, ticketCode, doctorName, room) {
+      if (!isSoundEnabled) return;
+      playChime();
+
+      if ('speechSynthesis' in window) {
+        setTimeout(() => {
+          window.speechSynthesis.cancel();
+          const announcement = `تنبيه، المريض ${patientName}، الدور رقم ${ticketCode}، يرجى التوجه إلى ${room}، عند ${doctorName}`;
+          const utterance = new SpeechSynthesisUtterance(announcement);
+          utterance.lang = 'ar-SA';
+          utterance.rate = 0.95;
+          utterance.pitch = 1.0;
+          window.speechSynthesis.speak(utterance);
+        }, 600);
+      }
+    }
+
+    /* ================= TAB NAVIGATION ================= */
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-primary-600', 'text-white', 'shadow-sm');
+        btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+      });
+
+      const target = document.getElementById(tabId);
+      const targetBtn = document.getElementById('nav-' + tabId);
+      if (target) target.classList.remove('hidden');
+      if (targetBtn) {
+        targetBtn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+        targetBtn.classList.add('bg-primary-600', 'text-white', 'shadow-sm');
+      }
+
+      // Refresh view when switching tabs
+      if (tabId === 'doctorAdminTab') {
+        renderAdminDashboard();
+      } else if (tabId === 'myTicketTab') {
+        renderMyTicketView();
+      } else if (tabId === 'screenTab') {
+        renderTVScreen();
+      }
+    }
+
+    /* ================= REALTIME CLOCK ================= */
+    function setupClock() {
+      function update() {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const dateStr = now.toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+        const timeEl = document.getElementById('currentTimeDisplay');
+        if (timeEl) timeEl.textContent = timeStr;
+
+        const tvClock = document.getElementById('screenLiveClock');
+        if (tvClock) tvClock.textContent = now.toLocaleTimeString('en-US', { hour12: false });
+
+        const tvDate = document.getElementById('screenLiveDate');
+        if (tvDate) tvDate.textContent = dateStr;
+      }
+      update();
+      setInterval(update, 1000);
+    }
+
+    /* ================= DOCTOR SELECTION & BOOKING ================= */
+    function populateDoctorDropdowns() {
+      const select = document.getElementById('doctorSelect');
+      const adminSelect = document.getElementById('adminDoctorFilter');
+      const walkInSelect = document.getElementById('walkInDoctorSelect');
+
+      if (!select) return;
+
+      const optsHtml = state.doctors.map(doc => {
+        const waitingCount = state.tickets.filter(t => t.doctorId === doc.id && t.status === 'waiting').length;
+        return `<option value="${doc.id}">
+          ${doc.name} - ${doc.specialty} (${doc.room}) [في الانتظار: ${waitingCount}]
+        </option>`;
+      }).join('');
+
+      select.innerHTML = optsHtml;
+      if (walkInSelect) walkInSelect.innerHTML = optsHtml;
+
+      if (adminSelect) {
+        adminSelect.innerHTML = state.doctors.map(doc => {
+          return `<option value="${doc.id}" ${doc.id === state.activeDoctorId ? 'selected' : ''}>
+            ${doc.name} (${doc.specialty} - ${doc.room})
+          </option>`;
+        }).join('');
+      }
+
+      // Update Selected Doctor summary in form
+      onDoctorSelectionChange();
+    }
+
+    function onDoctorSelectionChange() {
+      const select = document.getElementById('doctorSelect');
+      if (!select) return;
+      const selectedId = select.value;
+      const doc = state.doctors.find(d => d.id === selectedId);
+      if (!doc) return;
+
+      const waitingTickets = state.tickets.filter(t => t.doctorId === doc.id && t.status === 'waiting');
+      const servingTicket = state.tickets.find(t => t.doctorId === doc.id && t.status === 'serving');
+
+      document.getElementById('docSummaryName').textContent = doc.name;
+      document.getElementById('docSummarySpecialty').textContent = `${doc.specialty} - ${doc.room}`;
+      document.getElementById('docSummaryHours').textContent = `أوقات العمل: ${doc.workingHours}`;
+      document.getElementById('docQueueCountBadge').textContent = waitingTickets.length;
+      document.getElementById('docCurrentServingBadge').textContent = servingTicket ? servingTicket.ticketCode : '--';
+      document.getElementById('docAvatar').textContent = doc.name.split(' ')[1] ? doc.name.split(' ')[1][0] : 'د';
+    }
+
+    function renderDoctorsSideList() {
+      const container = document.getElementById('doctorsListContainer');
+      if (!container) return;
+
+      container.innerHTML = state.doctors.map(doc => {
+        const waiting = state.tickets.filter(t => t.doctorId === doc.id && t.status === 'waiting').length;
+        const serving = state.tickets.find(t => t.doctorId === doc.id && t.status === 'serving');
+        const isSelected = document.getElementById('doctorSelect')?.value === doc.id;
+
+        return `
+          <div onclick="selectDoctorFromCard('${doc.id}')" class="p-3 rounded-xl border ${isSelected ? 'border-primary-500 bg-primary-50/50 ring-2 ring-primary-500/20' : 'border-slate-200 bg-white hover:border-slate-300'} transition cursor-pointer">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="font-bold text-sm text-slate-900">${doc.name}</span>
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                doc.status === 'available' ? 'bg-emerald-100 text-emerald-800' :
+                doc.status === 'break' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'
+              }">
+                ${doc.status === 'available' ? 'متاح للكشف' : doc.status === 'break' ? 'استراحة' : 'غير متاح'}
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-xs text-slate-500">
+              <span>${doc.specialty} (${doc.room})</span>
+              <span class="font-bold text-slate-700">انتظار: ${waiting}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectDoctorFromCard(docId) {
+      const select = document.getElementById('doctorSelect');
+      if (select) {
+        select.value = docId;
+        onDoctorSelectionChange();
+        renderDoctorsSideList();
+      }
+    }
+
+    /* ================= PATIENT BOOKING ACTION ================= */
+    function handlePatientBooking(event) {
+      event.preventDefault();
+
+      const doctorId = document.getElementById('doctorSelect').value;
+      const patientName = document.getElementById('patientName').value.trim();
+      const patientPhone = document.getElementById('patientPhone').value.trim();
+      const patientAge = document.getElementById('patientAge').value;
+      const priorityType = document.querySelector('input[name="priorityType"]:checked')?.value || 'normal';
+      const visitReason = document.getElementById('visitReason').value.trim();
+
+      const doctor = state.doctors.find(d => d.id === doctorId);
+      if (!doctor) {
+        alert('يرجى اختيار طبيب متاح');
+        return;
+      }
+
+      // Generate Ticket Sequence for this specific Doctor
+      const seqNumber = doctor.nextTicketSeq || 1;
+      const ticketCode = `${doctor.prefix}-${100 + seqNumber}`;
+      doctor.nextTicketSeq = seqNumber + 1;
+
+      const newTicket = {
+        id: 'tkt-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+        ticketCode: ticketCode,
+        doctorId: doctor.id,
+        doctorName: doctor.name,
+        specialty: doctor.specialty,
+        room: doctor.room,
+        patientName: patientName,
+        phone: patientPhone,
+        age: patientAge || null,
+        priority: priorityType, // 'normal' | 'urgent'
+        reason: visitReason || 'فحص عام واستشارة',
+        status: 'waiting', // waiting | serving | completed | cancelled
+        createdAt: new Date().toISOString(),
+        calledAt: null,
+        completedAt: null,
+        diagnosisNote: '',
+      };
+
+      // If priority is urgent, place before normal tickets in waiting list
+      if (priorityType === 'urgent') {
+        const insertIndex = state.tickets.findLastIndex(t => t.doctorId === doctorId && t.status === 'waiting' && t.priority === 'urgent');
+        if (insertIndex !== -1) {
+          state.tickets.splice(insertIndex + 1, 0, newTicket);
+        } else {
+          const firstWaiting = state.tickets.findIndex(t => t.doctorId === doctorId && t.status === 'waiting');
+          if (firstWaiting !== -1) {
+            state.tickets.splice(firstWaiting, 0, newTicket);
+          } else {
+            state.tickets.push(newTicket);
+          }
+        }
+      } else {
+        state.tickets.push(newTicket);
+      }
+
+      state.myActiveTicketId = newTicket.id;
+      saveStateToStorage();
+
+      // Reset Form
+      document.getElementById('bookingForm').reset();
+      selectDoctorFromCard(doctorId);
+
+      // Play soft chime & show ticket screen
+      playChime();
+      switchTab('myTicketTab');
+      renderAllViews();
+    }
+
+    /* ================= TICKET SEARCH & TRACKING ================= */
+    function searchTicket() {
+      const q = document.getElementById('searchTicketInput').value.trim().toLowerCase();
+      if (!q) return;
+
+      const found = state.tickets.find(t => 
+        t.ticketCode.toLowerCase() === q || 
+        (t.phone && t.phone.includes(q)) || 
+        t.patientName.toLowerCase().includes(q)
+      );
+
+      if (found) {
+        state.myActiveTicketId = found.id;
+        saveStateToStorage();
+        renderMyTicketView();
+      } else {
+        alert('لم يتم العثور على تذكرة بهذا الرقم أو الاسم.');
+      }
+    }
+
+    function renderMyTicketView() {
+      const ticket = state.tickets.find(t => t.id === state.myActiveTicketId) || 
+                     state.tickets[state.tickets.length - 1]; // fallback to last created
+
+      if (!ticket) {
+        document.getElementById('ticketCodeDisplay').textContent = '---';
+        document.getElementById('ticketPatientNameDisplay').textContent = 'لا توجد تذكرة نشطة حالياً';
+        document.getElementById('ticketDoctorNameDisplay').textContent = '--';
+        document.getElementById('ticketClinicRoomDisplay').textContent = '--';
+        document.getElementById('ticketTimeDisplay').textContent = '--';
+        document.getElementById('ticketCurrentServingDisplay').textContent = '--';
+        document.getElementById('ticketAheadCountDisplay').textContent = '0';
+        document.getElementById('ticketEstimatedTimeDisplay').textContent = '--';
+        return;
+      }
+
+      const doctor = state.doctors.find(d => d.id === ticket.doctorId);
+      const waitingList = state.tickets.filter(t => t.doctorId === ticket.doctorId && t.status === 'waiting');
+      const ticketIndexInQueue = waitingList.findIndex(t => t.id === ticket.id);
+      
+      const patientsAhead = ticket.status === 'waiting' ? (ticketIndexInQueue >= 0 ? ticketIndexInQueue : 0) : 0;
+      const avgMinutes = doctor ? doctor.avgDurationMinutes : 15;
+      const estimatedMinutes = patientsAhead * avgMinutes;
+
+      const currentServing = state.tickets.find(t => t.doctorId === ticket.doctorId && t.status === 'serving');
+
+      document.getElementById('ticketCodeDisplay').textContent = ticket.ticketCode;
+      document.getElementById('ticketPatientNameDisplay').textContent = ticket.patientName;
+      document.getElementById('ticketDoctorNameDisplay').textContent = ticket.doctorName;
+      document.getElementById('ticketClinicRoomDisplay').textContent = `${ticket.specialty} (${ticket.room})`;
+      
+      const createdDate = new Date(ticket.createdAt);
+      document.getElementById('ticketTimeDisplay').textContent = createdDate.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) + ' - ' + createdDate.toLocaleDateString('ar-SA');
+      
+      document.getElementById('ticketCurrentServingDisplay').textContent = currentServing ? currentServing.ticketCode : 'جاهز للاستدعاء';
+      document.getElementById('ticketAheadCountDisplay').textContent = ticket.status === 'waiting' ? patientsAhead : (ticket.status === 'serving' ? 'دورك الآن!' : '0');
+      
+      if (ticket.status === 'waiting') {
+        document.getElementById('ticketEstimatedTimeDisplay').textContent = estimatedMinutes > 0 ? `~ ${estimatedMinutes} دقيقة` : 'أقل من 5 دقائق';
+      } else if (ticket.status === 'serving') {
+        document.getElementById('ticketEstimatedTimeDisplay').textContent = 'في غرفة الكشف';
+      } else if (ticket.status === 'completed') {
+        document.getElementById('ticketEstimatedTimeDisplay').textContent = 'مكتمل ✓';
+      } else {
+        document.getElementById('ticketEstimatedTimeDisplay').textContent = 'ملغي ✕';
+      }
+
+      // Status Badge
+      const badge = document.getElementById('ticketStatusBadgeDisplay');
+      if (ticket.status === 'waiting') {
+        badge.className = 'inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold bg-amber-400 text-slate-900 shadow-sm';
+        badge.textContent = `في الانتظار (قبلك ${patientsAhead} مريض) ⏳`;
+      } else if (ticket.status === 'serving') {
+        badge.className = 'inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-400 text-slate-950 shadow-sm animate-bounce';
+        badge.textContent = 'دورك الآن! يرجى الدخول لغرفة الكشف 🔔';
+      } else if (ticket.status === 'completed') {
+        badge.className = 'inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-800 shadow-sm';
+        badge.textContent = 'تم اكتمال الفحص الطبي بنجاح ✅';
+      } else {
+        badge.className = 'inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold bg-rose-400 text-white shadow-sm';
+        badge.textContent = 'تم إلغاء التذكرة ✕';
+      }
+
+      // Step indicators
+      const dot1 = document.getElementById('stepDot1');
+      const dot2 = document.getElementById('stepDot2');
+      const dot3 = document.getElementById('stepDot3');
+      const dot4 = document.getElementById('stepDot4');
+
+      dot1.className = 'w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold';
+      
+      if (ticket.status === 'waiting') {
+        dot2.className = 'w-7 h-7 rounded-full bg-primary-600 text-white flex items-center justify-center text-xs font-bold animate-pulse';
+        dot3.className = 'w-7 h-7 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center text-xs font-bold';
+        dot4.className = 'w-7 h-7 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center text-xs font-bold';
+      } else if (ticket.status === 'serving') {
+        dot2.className = 'w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold';
+        dot3.className = 'w-7 h-7 rounded-full bg-primary-600 text-white flex items-center justify-center text-xs font-bold animate-bounce';
+        dot4.className = 'w-7 h-7 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center text-xs font-bold';
+      } else if (ticket.status === 'completed') {
+        dot2.className = 'w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold';
+        dot3.className = 'w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold';
+        dot4.className = 'w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold';
+      }
+    }
+
+    function printCurrentTicket() {
+      const ticket = state.tickets.find(t => t.id === state.myActiveTicketId) || state.tickets[state.tickets.length - 1];
+      if (!ticket) {
+        alert('لا توجد تذكرة للطباعة');
+        return;
+      }
+
+      document.getElementById('printTicketCode').textContent = ticket.ticketCode;
+      document.getElementById('printTicketPriority').textContent = ticket.priority === 'urgent' ? '[ دور مستعجل طارئ ]' : '[ دور كشف عادي ]';
+      document.getElementById('printPatientName').textContent = ticket.patientName;
+      document.getElementById('printDoctorName').textContent = ticket.doctorName;
+      document.getElementById('printDoctorSpecialty').textContent = ticket.specialty;
+      document.getElementById('printClinicRoom').textContent = ticket.room;
+      document.getElementById('printTime').textContent = new Date(ticket.createdAt).toLocaleString('ar-SA');
+
+      if (window.AndroidPrint && typeof window.AndroidPrint.printPage === 'function') {
+        window.AndroidPrint.printPage();
+      } else {
+        window.print();
+      }
+    }
+
+    /* ================= DOCTOR & ADMIN DASHBOARD ================= */
+    function onAdminDoctorChange() {
+      const select = document.getElementById('adminDoctorFilter');
+      if (select) {
+        state.activeDoctorId = select.value;
+        saveStateToStorage();
+        renderAdminDashboard();
+      }
+    }
+
+    function renderAdminDashboard() {
+      const currentDoc = state.doctors.find(d => d.id === state.activeDoctorId) || state.doctors[0];
+      if (!currentDoc) return;
+
+      // Update Header & Badge
+      const badge = document.getElementById('activeDoctorBadge');
+      if (badge) badge.textContent = `${currentDoc.name} - ${currentDoc.room}`;
+
+      // Doctor availability indicator
+      const dot = document.getElementById('docStatusIndicatorDot');
+      const text = document.getElementById('docStatusIndicatorText');
+      if (dot && text) {
+        if (currentDoc.status === 'available') {
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+          text.textContent = 'متاح للكشف';
+        } else if (currentDoc.status === 'break') {
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+          text.textContent = 'في استراحة';
+        } else {
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400';
+          text.textContent = 'غير متاح';
+        }
+      }
+
+      // Stats
+      const docTickets = state.tickets.filter(t => t.doctorId === currentDoc.id);
+      const servingTicket = docTickets.find(t => t.status === 'serving');
+      const waitingTickets = docTickets.filter(t => t.status === 'waiting');
+      const completedTickets = docTickets.filter(t => t.status === 'completed');
+      const cancelledTickets = docTickets.filter(t => t.status === 'cancelled');
+
+      document.getElementById('adminStatServing').textContent = servingTicket ? servingTicket.ticketCode : '--';
+      document.getElementById('adminStatWaiting').textContent = waitingTickets.length;
+      document.getElementById('adminStatCompleted').textContent = completedTickets.length;
+      document.getElementById('adminStatCancelled').textContent = cancelledTickets.length;
+
+      // Active Patient Card
+      const hasActive = document.getElementById('hasActivePatientBlock');
+      const noActive = document.getElementById('noActivePatientBlock');
+
+      if (servingTicket) {
+        hasActive.classList.remove('hidden');
+        noActive.classList.add('hidden');
+
+        document.getElementById('activeTicketCode').textContent = servingTicket.ticketCode;
+        document.getElementById('activePatientName').textContent = servingTicket.patientName;
+        document.getElementById('activePatientMeta').textContent = `هاتف: ${servingTicket.phone || 'غير مسجل'} | العمر: ${servingTicket.age ? servingTicket.age + ' سنة' : '--'}`;
+        document.getElementById('activeVisitReason').textContent = servingTicket.reason || 'فحص عام واستشارة';
+        
+        const priorityBadge = document.getElementById('activePriorityBadge');
+        if (servingTicket.priority === 'urgent') {
+          priorityBadge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300';
+          priorityBadge.textContent = 'حالة مستعجلة ⚠️';
+        } else {
+          priorityBadge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700';
+          priorityBadge.textContent = 'عادي';
+        }
+
+        document.getElementById('doctorDiagnosisInput').value = servingTicket.diagnosisNote || '';
+      } else {
+        hasActive.classList.add('hidden');
+        noActive.classList.remove('hidden');
+      }
+
+      // Next in queue preview
+      const nextContainer = document.getElementById('nextPatientPreviewContainer');
+      const nextCountBadge = document.getElementById('nextQueueBadgeCount');
+      if (nextCountBadge) nextCountBadge.textContent = `${waitingTickets.length} في الانتظار`;
+
+      if (waitingTickets.length > 0) {
+        const next = waitingTickets[0];
+        nextContainer.innerHTML = `
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="w-10 h-10 rounded-lg bg-teal-500 text-white font-black text-sm flex items-center justify-center">
+                ${next.ticketCode}
+              </span>
+              <div>
+                <h5 class="font-bold text-slate-900 text-sm">${next.patientName}</h5>
+                <span class="text-xs text-slate-500">${next.phone || 'بدون هاتف'} ${next.priority === 'urgent' ? '• <strong class="text-amber-600">طارئ</strong>' : ''}</span>
+              </div>
+            </div>
+            <button onclick="callSpecificPatient('${next.id}')" class="px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold transition">
+              استدعاء الآن
+            </button>
+          </div>
+        `;
+      } else {
+        nextContainer.innerHTML = `
+          <div class="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400">
+            لا يوجد مرضى في قائمة الانتظار لهذا الطبيب حالياً
+          </div>
+        `;
+      }
+
+      // Doctor meta
+      document.getElementById('docAvgDuration').textContent = `${currentDoc.avgDurationMinutes} دقيقة / مريض`;
+      document.getElementById('docWorkingHours').textContent = currentDoc.workingHours;
+      document.getElementById('docTicketPrefix').textContent = `${currentDoc.prefix} (${currentDoc.room})`;
+
+      renderAdminQueueTable();
+    }
+
+    function toggleCurrentDoctorAvailability() {
+      const doc = state.doctors.find(d => d.id === state.activeDoctorId);
+      if (!doc) return;
+
+      if (doc.status === 'available') {
+        doc.status = 'break';
+      } else if (doc.status === 'break') {
+        doc.status = 'offline';
+      } else {
+        doc.status = 'available';
+      }
+
+      saveStateToStorage();
+      renderAllViews();
+    }
+
+    function renderAdminQueueTable() {
+      const currentDoc = state.doctors.find(d => d.id === state.activeDoctorId);
+      if (!currentDoc) return;
+
+      const tbody = document.getElementById('adminQueueTableBody');
+      const filter = document.getElementById('queueStatusFilter')?.value || 'waiting';
+
+      let list = state.tickets.filter(t => t.doctorId === currentDoc.id);
+      if (filter !== 'all') {
+        list = list.filter(t => t.status === filter);
+      }
+
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-8 text-center text-xs text-slate-400">
+              لا توجد تذاكر تطابق هذا المعيار
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = list.map(t => {
+        let statusBadge = '';
+        if (t.status === 'waiting') {
+          statusBadge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">في الانتظار</span>';
+        } else if (t.status === 'serving') {
+          statusBadge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-teal-100 text-teal-800 animate-pulse">قيد الكشف</span>';
+        } else if (t.status === 'completed') {
+          statusBadge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">مكتمل</span>';
+        } else {
+          statusBadge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800">ملغي</span>';
+        }
+
+        const priorityBadge = t.priority === 'urgent' 
+          ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-black bg-rose-100 text-rose-700">طارئ ⚠️</span>'
+          : '<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">عادي</span>';
+
+        const createdTime = new Date(t.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-3 px-4 font-black text-slate-900">${t.ticketCode}</td>
+            <td class="py-3 px-4 font-bold text-slate-800">${t.patientName}</td>
+            <td class="py-3 px-4 text-slate-500 dir-ltr text-right">${t.phone || '--'}</td>
+            <td class="py-3 px-4 text-slate-500">${createdTime}</td>
+            <td class="py-3 px-4">${priorityBadge}</td>
+            <td class="py-3 px-4">${statusBadge}</td>
+            <td class="py-3 px-4 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                ${t.status === 'waiting' ? `
+                  <button onclick="callSpecificPatient('${t.id}')" class="px-2.5 py-1 rounded-md bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs">
+                    استدعاء
+                  </button>
+                  <button onclick="cancelSpecificTicket('${t.id}')" class="px-2.5 py-1 rounded-md bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-xs" title="إلغاء التذكرة">
+                    ✕
+                  </button>
+                ` : t.status === 'serving' ? `
+                  <button onclick="completeActiveConsultation()" class="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">
+                    إنهاء
+                  </button>
+                ` : `
+                  <span class="text-xs text-slate-400 font-medium">--</span>
+                `}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    /* ================= CONSULTATION QUEUE ACTIONS ================= */
+    function callNextPatientForCurrentDoctor() {
+      const currentDoc = state.doctors.find(d => d.id === state.activeDoctorId);
+      if (!currentDoc) return;
+
+      // Find first waiting patient for this doctor
+      const nextTicket = state.tickets.find(t => t.doctorId === currentDoc.id && t.status === 'waiting');
+      if (!nextTicket) {
+        alert('لا يوجد أي مريض في قائمة الانتظار لهذا الطبيب.');
+        return;
+      }
+
+      callSpecificPatient(nextTicket.id);
+    }
+
+    function callSpecificPatient(ticketId) {
+      const ticket = state.tickets.find(t => t.id === ticketId);
+      if (!ticket) return;
+
+      const doctor = state.doctors.find(d => d.id === ticket.doctorId);
+      if (!doctor) return;
+
+      // If another patient is currently serving with this doctor, complete them first
+      const currentServing = state.tickets.find(t => t.doctorId === doctor.id && t.status === 'serving');
+      if (currentServing) {
+        currentServing.status = 'completed';
+        currentServing.completedAt = new Date().toISOString();
+      }
+
+      ticket.status = 'serving';
+      ticket.calledAt = new Date().toISOString();
+      doctor.currentServingNumber = ticket.ticketCode;
+
+      saveStateToStorage();
+      announcePatientCall(ticket.patientName, ticket.ticketCode, doctor.name, doctor.room);
+      renderAllViews();
+    }
+
+    function recallActivePatient() {
+      const currentDoc = state.doctors.find(d => d.id === state.activeDoctorId);
+      if (!currentDoc) return;
+
+      const active = state.tickets.find(t => t.doctorId === currentDoc.id && t.status === 'serving');
+      if (!active) return;
+
+      announcePatientCall(active.patientName, active.ticketCode, currentDoc.name, currentDoc.room);
+    }
+
+    function completeActiveConsultation() {
+      const currentDoc = state.doctors.find(d => d.id === state.activeDoctorId);
+      if (!currentDoc) return;
+
+      const active = state.tickets.find(t => t.doctorId === currentDoc.id && t.status === 'serving');
+      if (!active) return;
+
+      const diagnosis = document.getElementById('doctorDiagnosisInput')?.value || '';
+      active.status = 'completed';
+      active.completedAt = new Date().toISOString();
+      active.diagnosisNote = diagnosis;
+      currentDoc.currentServingNumber = null;
+
+      saveStateToStorage();
+      playChime();
+      renderAllViews();
+    }
+
+    function cancelActiveConsultation() {
+      const currentDoc = state.doctors.find(d => d.id === state.activeDoctorId);
+      if (!currentDoc) return;
+
+      const active = state.tickets.find(t => t.doctorId === currentDoc.id && t.status === 'serving');
+      if (!active) return;
+
+      if (!confirm(`هل أنت متأكد من إلغاء كشف المريض ${active.patientName} (${active.ticketCode})؟`)) {
+        return;
+      }
+
+      active.status = 'cancelled';
+      active.completedAt = new Date().toISOString();
+      currentDoc.currentServingNumber = null;
+
+      saveStateToStorage();
+      renderAllViews();
+    }
+
+    function cancelSpecificTicket(ticketId) {
+      const ticket = state.tickets.find(t => t.id === ticketId);
+      if (!ticket) return;
+
+      if (confirm(`هل أنت متأكد من إلغاء تذكرة ${ticket.patientName} (${ticket.ticketCode})؟`)) {
+        ticket.status = 'cancelled';
+        saveStateToStorage();
+        renderAllViews();
+      }
+    }
+
+    /* ================= WALK-IN MODAL ================= */
+    function openWalkInModal() {
+      const modal = document.getElementById('walkInModal');
+      const select = document.getElementById('walkInDoctorSelect');
+      if (select) select.value = state.activeDoctorId;
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeWalkInModal() {
+      const modal = document.getElementById('walkInModal');
+      if (modal) modal.classList.add('hidden');
+      document.getElementById('walkInForm').reset();
+    }
+
+    function handleWalkInSubmit(event) {
+      event.preventDefault();
+
+      const doctorId = document.getElementById('walkInDoctorSelect').value;
+      const name = document.getElementById('walkInName').value.trim();
+      const phone = document.getElementById('walkInPhone').value.trim();
+      const priority = document.getElementById('walkInPriority').value;
+
+      const doctor = state.doctors.find(d => d.id === doctorId);
+      if (!doctor) return;
+
+      const seqNumber = doctor.nextTicketSeq || 1;
+      const ticketCode = `${doctor.prefix}-${100 + seqNumber}`;
+      doctor.nextTicketSeq = seqNumber + 1;
+
+      const newTicket = {
+        id: 'tkt-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+        ticketCode: ticketCode,
+        doctorId: doctor.id,
+        doctorName: doctor.name,
+        specialty: doctor.specialty,
+        room: doctor.room,
+        patientName: name,
+        phone: phone,
+        age: null,
+        priority: priority,
+        reason: 'تسجيل مباشر من الاستقبال (Walk-in)',
+        status: 'waiting',
+        createdAt: new Date().toISOString(),
+        calledAt: null,
+        completedAt: null,
+        diagnosisNote: '',
+      };
+
+      if (priority === 'urgent') {
+        const firstWaiting = state.tickets.findIndex(t => t.doctorId === doctorId && t.status === 'waiting');
+        if (firstWaiting !== -1) {
+          state.tickets.splice(firstWaiting, 0, newTicket);
+        } else {
+          state.tickets.push(newTicket);
+        }
+      } else {
+        state.tickets.push(newTicket);
+      }
+
+      state.activeDoctorId = doctorId;
+      state.myActiveTicketId = newTicket.id;
+      saveStateToStorage();
+
+      closeWalkInModal();
+      playChime();
+      renderAllViews();
+    }
+
+    /* ================= DAILY QUEUE RESET (Requirement 2) ================= */
+    function confirmResetDailyQueue() {
+      const modal = document.getElementById('resetConfirmModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeResetModal() {
+      const modal = document.getElementById('resetConfirmModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function executeDailyReset(keepDoctorMeta = true) {
+      // Reset ticket numbers and queues
+      state.doctors.forEach(doc => {
+        doc.currentServingNumber = null;
+        doc.nextTicketSeq = 1;
+        doc.status = 'available';
+      });
+
+      // Clear tickets
+      state.tickets = [];
+      state.myActiveTicketId = null;
+
+      saveStateToStorage();
+      closeResetModal();
+      playChime();
+      renderAllViews();
+
+      alert('تم تصفير قوائم وأرقام الدور بنجاح لبداية يوم عمل جديد.');
+    }
+
+    /* ================= BACKUP & EXPORT JSON ================= */
+    function exportDataToJSON() {
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(state, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', dataStr);
+      downloadAnchor.setAttribute('download', `clinic_queue_backup_${new Date().toISOString().slice(0, 10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    /* ================= WAITING ROOM TV SCREEN (MULTI-DOCTOR LIVE) ================= */
+    function renderTVScreen() {
+      const container = document.getElementById('tvDoctorsGrid');
+      if (!container) return;
+
+      container.innerHTML = state.doctors.map(doc => {
+        const serving = state.tickets.find(t => t.doctorId === doc.id && t.status === 'serving');
+        const waitingTickets = state.tickets.filter(t => t.doctorId === doc.id && t.status === 'waiting');
+        const nextList = waitingTickets.slice(0, 3);
+
+        const isServing = !!serving;
+
+        return `
+          <div class="bg-slate-800/80 rounded-2xl p-5 border ${isServing ? 'border-teal-500/60 shadow-lg shadow-teal-500/10' : 'border-slate-700'} relative overflow-hidden flex flex-col justify-between">
+            
+            <!-- Doctor & Clinic Room Header -->
+            <div>
+              <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-700/60">
+                <div>
+                  <h3 class="text-lg font-black text-white">${doc.name}</h3>
+                  <span class="text-xs text-teal-400 font-bold">${doc.specialty} • ${doc.room}</span>
+                </div>
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full ${
+                  doc.status === 'available' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                  doc.status === 'break' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                  'bg-slate-700 text-slate-400'
+                }">
+                  ${doc.status === 'available' ? 'متاح' : doc.status === 'break' ? 'استراحة' : 'غير متاح'}
+                </span>
+              </div>
+
+              <!-- Main Current Number Box -->
+              <div class="rounded-2xl p-6 text-center ${isServing ? 'bg-gradient-to-b from-teal-950 to-slate-900 border border-teal-500/40 calling-pulse' : 'bg-slate-900/60 border border-slate-700'} mb-5">
+                <span class="text-xs text-slate-400 font-bold tracking-wider uppercase block mb-1">
+                  ${isServing ? 'الرقم قيد الكشف الآن' : 'في انتظار المريض التالي'}
+                </span>
+                <span class="text-5xl font-black font-mono tracking-widest block text-teal-300 my-1">
+                  ${serving ? serving.ticketCode : '---'}
+                </span>
+                <p class="text-sm font-bold text-white truncate px-2 mt-2">
+                  ${serving ? serving.patientName : 'العيادة جاهزة للاستدعاء'}
+                </p>
+              </div>
+            </div>
+
+            <!-- Upcoming Queue Ticker for this Clinic -->
+            <div>
+              <div class="flex items-center justify-between text-xs text-slate-400 font-bold mb-2">
+                <span>الأدوار القادمة بالانتظار:</span>
+                <span class="text-teal-400">${waitingTickets.length} مريض</span>
+              </div>
+
+              <div class="flex items-center gap-2">
+                ${nextList.length > 0 ? nextList.map((t, idx) => `
+                  <div class="flex-1 py-2 px-1 text-center rounded-lg bg-slate-900/70 border border-slate-700 text-xs">
+                    <span class="font-mono font-black text-white block">${t.ticketCode}</span>
+                    <span class="text-[10px] text-slate-400 truncate block">${t.patientName.split(' ')[0]}</span>
+                  </div>
+                `).join('') : `
+                  <div class="w-full py-2 text-center text-xs text-slate-500 bg-slate-900/30 rounded-lg">
+                    لا يوجد مرضى بالانتظار
+                  </div>
+                `}
+              </div>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    /* ================= MASTER RENDER DISPATCHER ================= */
+    function renderAllViews() {
+      populateDoctorDropdowns();
+      renderDoctorsSideList();
+      renderMyTicketView();
+      renderAdminDashboard();
+      renderTVScreen();
+    }
+  </script>
+</body>
+</html>
